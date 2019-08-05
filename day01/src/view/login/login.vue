@@ -249,6 +249,7 @@
           return parseInt(offset);
         };
         evenBox.addEventListener(boxEven['0'], function(e) {
+          console.log(e);
           e = (boxEven['0'] == 'touchstart') ? e.touches[0] : e || window.event;
           goX = e.clientX,
             offsetLeft = getOffset(box,'left'),
@@ -276,20 +277,18 @@
 
     },
     mounted(){
-      var _this = this;/*this.$axios.post(this.domain.serverpath+'getCode').then((response)=>{
+      var _this = this;
+      var code = "";
+      //从后台获取滑动验证码
+      //参数 url 访问参数
+      this.$axios.post(this.domain.serverpath+'getCode').then((response)=>{
         code=response.data.result;
         //向浏览器写一个Cookie
         document.cookie = 'testCookies' + "=" + response.data.token + "; " + -1;
         _this.moveCode(code,_this);
       }).catch((error)=>{
 
-      })*/
-      var code = "";
-      //从后台获取滑动验证码
-      //参数 url 访问参数
-
-
-//});
+      });
     }
   }
 </script>
