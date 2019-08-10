@@ -17,6 +17,10 @@ Vue.prototype.domain=domain
 import utils from '@/js/utils.js'
 Vue.prototype.toAes=utils
 
+//引入cookie插件
+import Cookies from 'js-cookie'
+Vue.prototype.Cookies=Cookies
+
 //配置Axios
 import vueAxios from 'axios'
 //将axios存储在全局的VUe中然后就可以用this.的方式去掉用
@@ -30,24 +34,35 @@ vueAxios.defaults.withCredentials = true;
 
 //为axios添加一个请求拦截器start
 vueAxios.interceptors.request.use((config)=>{
-  //使用拦截器发送前携带上JWT token参数
-  let token=window.localStorage.getItem("token");
-  config.headers['Authorization']=token
+
+  if(config.url.includes("getCode")){//如果是获取验证码的路径
+    //没有Cookie的话添加Cookie
+    let aucokie=Cookies.get("authcode");
+    if(aucokie==null){
+      Cookies.set("authcode","",{path:"/",domain:"localhost",age:-1})
+    }
+
+  }
+
+    let token=window.localStorage.getItem("token");
+
+    config.headers['token']=token;
+
   return config;
-},(error)=>{
-  return Promise.reject(error)
 })
 //为axios添加一个请求拦截器end
 
 //设置一个响应拦截器用来刷新token信息start
 vueAxios.interceptors.response.use((response)=>{
 
-  let yy=response.headers['authorization'];
+    let yy=response.headers['token'];
 
-  if(yy!=undefined){
-    //重新设置localStorge中的token的值，用来刷新tocken
-    window.localStorage.setItem("token",yy)
-  }
+    if(yy!=undefined){
+      //重新设置localStorge中的token的值，用来刷新tocken
+      window.localStorage.setItem("token",yy);
+      this.$router.push("/")
+    }
+
   return response;
 },(error)=>{
   //失败跳转到登录界面
@@ -87,7 +102,7 @@ import './assets/xiaotubiao/iconfont.css'
 //vue的样式配置start
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css';
-Vue.use(ElementUI)
+Vue.use(ElementUI);
 
 /* eslint-disable no-new */
 new Vue({

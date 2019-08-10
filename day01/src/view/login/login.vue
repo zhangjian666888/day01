@@ -85,6 +85,7 @@
       submitForm(ruleid){
 
         let code=this.$refs.coderef.value;
+        console.log(code);
         if(code==null||code==""){
           const h = this.$createElement;
           this.$notify({
@@ -113,6 +114,7 @@
             return;
           }
           par.code=this.$refs.coderef.value;
+          par.codekey=this.Cookies.get("authcode");
           //转JSON串
           let canshu=this.toAes.encrypt(JSON.stringify(par));
           let params={canshu:canshu};
@@ -131,7 +133,7 @@
           this.$axios.post(this.domain.serverpath+"login",qs.stringify(params)).then((response)=>{
 
             let respo=response.data;
-            if(respo.success=="ok"){
+            if(respo.code=="200"){
               //存储token到浏览器端的缓存中，
               window.localStorage.setItem("token",respo.token);
               //关闭加载窗
@@ -142,11 +144,11 @@
               clearInterval(timer)
 
               //跳转到首页界面
-              this.domain.userinfo.username=respo.result.username
-              this.domain.userinfo.userid=respo.result.id
-              //将用户ID存入到全局的VUE对象中
+              let qs=require("qs");
 
-              this.$router.push({path:'/view/shouye/shouye',query:{username:respo.result.username,userid:respo.result.id}});
+              window.localStorage.setItem("userInfo",window.JSON.stringify(respo.result));
+
+              this.$router.push({path:'/view/shouye/shouye'});
             }else if(respo.error!=null){
               //关闭加载窗
               //关闭加载窗
@@ -249,14 +251,14 @@
           return parseInt(offset);
         };
         evenBox.addEventListener(boxEven['0'], function(e) {
-          console.log(e);
-          e = (boxEven['0'] == 'touchstart') ? e.touches[0] : e || window.event;
-          goX = e.clientX,
-            offsetLeft = getOffset(box,'left'),
-            deviation = this.clientWidth,
-            evenWidth = box.clientWidth - deviation,
-            endX;
-          document.addEventListener(boxEven['1'],moveFn,false);
+            console.log(e);
+            e = (boxEven['0'] == 'touchstart') ? e.touches[0] : e || window.event;
+            goX = e.clientX,
+              offsetLeft = getOffset(box,'left'),
+              deviation = this.clientWidth,
+              evenWidth = box.clientWidth - deviation,
+              endX;
+            document.addEventListener(boxEven['1'],moveFn,false);
           document.addEventListener(boxEven['2'],removeFn,false);
         },false);
         fn.setCode = function(code){
@@ -284,7 +286,7 @@
       this.$axios.post(this.domain.serverpath+'getCode').then((response)=>{
         code=response.data.result;
         //向浏览器写一个Cookie
-        document.cookie = 'testCookies' + "=" + response.data.token + "; " + -1;
+        //document.cookie = 'testCookies' + "=" + response.data.token + "; " + -1;
         _this.moveCode(code,_this);
       }).catch((error)=>{
 
