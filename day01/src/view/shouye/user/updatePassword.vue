@@ -108,7 +108,7 @@
                  }else{
 
                    this.active = 0;
-                   this.$message.error("发送失败!");
+                   this.$message.error(res.data.error);
                  }
 
                });
