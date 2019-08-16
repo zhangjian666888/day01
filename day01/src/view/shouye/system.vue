@@ -103,16 +103,18 @@
                           </span>
                     </el-tooltip>
                   </el-badge>
-
-
                 </div>
             </div>
         </el-card>
+      </div>
+      <div>
+        <div id="main" style="width: 100%;height: 450px;margin-top: 50px"></div>
       </div>
     </div>
 </template>
 
 <script>
+  import echarts from 'echarts'
     export default {
         name: "system",
         data(){
@@ -121,8 +123,60 @@
             styleel:{
               left:'200%'
             },
+            charts: '',
+            /*纵向数据*/
+            opinionData: window.JSON.parse(window.localStorage.getItem("zong")),
           }
+        },
+      methods: {
+        drawLine(id) {
+          this.charts = echarts.init(document.getElementById(id))
+          this.charts.setOption({
+            tooltip: {
+              trigger: 'axis'
+            },
+            legend: {
+              data: ['登陆人数:']
+            },
+            grid: {
+              left: '3%',
+              right: '4%',
+              bottom: '3%',
+              containLabel: true
+            },
+
+            toolbox: {
+              feature: {
+                saveAsImage: {}
+              }
+            },
+            xAxis: {
+              type: 'category',
+              boundaryGap: false,
+              /*横向数据*/
+              data: window.JSON.parse(window.localStorage.getItem("heng")),
+
+            },
+            yAxis: {
+              type: 'value'
+            },
+
+            series: [{
+              name: '登陆人数',
+              type: 'line',
+              stack: '总量',
+              data: this.opinionData
+            }]
+          })
         }
+      },
+      //调用
+      mounted() {
+        this.$nextTick(function() {
+          this.drawLine('main')
+        });
+
+      }
     }
 </script>
 
@@ -144,5 +198,8 @@
 
   .box-card {
     width:99.5%;
+  }
+  * {
+    list-style: none;
   }
 </style>

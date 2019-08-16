@@ -8,11 +8,20 @@ import datamain from '@/view/shouye/datamain'
 import userCrud from '@/view/shouye/user/userCrud'
 import menuCrud from '@/view/shouye/menu/menuCrud'
 import roleCrud from '@/view/shouye/role/roleCrud'
+import updatePassword from '@/view/shouye/user/updatePassword'
 Vue.use(Router)
 
 export default new Router({
   mode:'history',
   routes: [
+    {
+      path: '/view/shouye/user/updatePassword',
+      name: 'updatePassword',
+      component: updatePassword,
+      meta:{
+        require:false//该路径的访问不需要登录
+      }
+    },
     {
       path: '/',
       name: 'login',

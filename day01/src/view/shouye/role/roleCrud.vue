@@ -119,6 +119,9 @@
         <el-form-item label="描述" :label-width="formLabelWidth">
           <el-input v-model="entityMod.miaoShu" autocomplete="off"></el-input>
         </el-form-item>
+        <el-form-item label="等级" :label-width="formLabelWidth">
+          <el-input v-model="entityMod.leval" autocomplete="off"></el-input>
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="updateModel = false">取 消</el-button>
@@ -153,7 +156,7 @@
           menuList:[],
           defaultShu:[],
           checkMeuns:[],
-
+          currentUser:window.JSON.parse(window.localStorage.getItem("userInfo")),
         }
       },
       mounted(){
@@ -171,8 +174,11 @@
           this.pageInfo.total = res.data.total;
 
         });
+
+        console.log(this.$data.currentUser)
+
         /*查询菜单列表*/
-        this.$axios.post(this.domain.serverpath+"selAllMeun").then((reponse)=>{
+        this.$axios.post(this.domain.serverpath+"selAllMenuByRoleId?rid="+this.$data.currentUser.role.id).then((reponse)=>{
 
           this.menuList = reponse.data
 
@@ -207,56 +213,66 @@
         },
         bindingMenu(index, row){
           /*回显权限*/
-          this.entityMod = {};
 
-          this.defaultShu.length=0;
+          console.log(row);
+          if(row.leval<this.$data.currentUser.rleval){
 
-          console.log(this.defaultShu);
+            this.$message.error("您没有权限,不能更改该等级的权限!");
 
-          this.entityMod = row;
-          /*通过一个根据角色id菜单全查的方法*/
-          this.$axios.post(this.domain.serverpath+"selMenuByRoleId?id="+this.entityMod.id).then((res)=>{
+          }else{
 
-            console.log(res)
+            this.entityMod = {};
 
-            let defaultMenu = res.data;
+            this.defaultShu.length=0;
 
-            if(defaultMenu.length > 0){
+            console.log(this.defaultShu);
 
-              /*挑选出最低的权限的id*/
-              for (let a = 0; a < defaultMenu.length; a++){
+            this.entityMod = row;
+            /*通过一个根据角色id菜单全查的方法*/
+            this.$axios.post(this.domain.serverpath+"selMenuByRoleId?id="+this.entityMod.id).then((res)=>{
 
-                if(defaultMenu[a].leval==4){
+              console.log(res)
 
-                  this.defaultShu[a] = defaultMenu[a].id;
+              let defaultMenu = res.data;
+
+              if(defaultMenu.length > 0){
+
+                /*挑选出最低的权限的id*/
+                for (let a = 0; a < defaultMenu.length; a++){
+
+                  if(defaultMenu[a].leval==4){
+
+                    this.defaultShu[a] = defaultMenu[a].id;
+
+                  }
 
                 }
 
+                /*this.defaultShu = this.defaultShu.concat(m1);*/
+
+                console.log(this.defaultShu);
+
+                setTimeout(() => {
+
+                  this.$refs.tree.setCheckedKeys(this.defaultShu), 0
+
+                });
+
+              }else{
+
+                setTimeout(() => {
+
+                  this.$refs.tree.setCheckedKeys(this.defaultShu),0
+
+                });
+
               }
 
-              /*this.defaultShu = this.defaultShu.concat(m1);*/
+            });
 
-              console.log(this.defaultShu);
+            this.bindingMenuModel = true;
 
-              setTimeout(() => {
-
-                this.$refs.tree.setCheckedKeys(this.defaultShu), 0
-
-              });
-
-            }else{
-
-              setTimeout(() => {
-
-                this.$refs.tree.setCheckedKeys(this.defaultShu),0
-
-              });
-
-            }
-
-          });
-
-          this.bindingMenuModel = true;
+          }
 
         },
         bindingMenuAndRole(){
@@ -297,11 +313,15 @@
 
               }else{
 
-                this.$message.error('错了哦，绑定失败!');
+                this.$message.error('错了哦，绑定失败,无权限!');
 
                 this.bindingMenuModel = false;
 
               }
+
+          }).catch((res)=>{
+
+            this.$message.error("您没有权限,不能访问该资源!");
 
           });
 
@@ -310,27 +330,41 @@
 
           if(this.entityMod.id==null){
 
-            this.$axios.post(this.domain.serverpath+"addRole",this.entityMod).then((res)=>{
+            if(this.entityMod.leval<this.$data.currentUser.rleval){
 
-              if(res){
+              this.$message.error("您无权添加比您权限高的角色!");
 
-                this.$message({
-                  message: '恭喜你，添加成功！',
-                  type: 'success',
-                  duration:2000
-                });
+              this.updateModel = false;
 
-                this.updateModel = false;
+            }else{
 
-                this.getlist(this.pageInfo.page,this.pageInfo.rows);
+              this.$axios.post(this.domain.serverpath+"addRole",this.entityMod).then((res)=>{
 
-              }else{
+                if(res){
 
-                alert("添加失败!");
+                  this.$message({
+                    message: '恭喜你，添加成功！',
+                    type: 'success',
+                    duration:2000
+                  });
 
-              }
+                  this.updateModel = false;
 
-            });
+                  this.getlist(this.pageInfo.page,this.pageInfo.rows);
+
+                }else{
+
+                  this.$message.error("添加失败,无权限!");
+
+                }
+
+              }).catch((res)=>{
+
+                this.$message.error("您没有权限,不能访问该资源!");
+
+              });
+
+            }
 
           }else{
 
@@ -350,9 +384,15 @@
 
               }else{
 
-                alert("修改失败!");
+                this.$message.error("修改失败,无权限!");
 
               }
+
+            }).catch((res)=>{
+
+              this.$message.error("您没有权限,不能访问该资源!");
+
+              this.updateModel = false;
 
             });
 
@@ -377,9 +417,13 @@
 
             }else{
 
-              alert("删除失败!");
+              this.$message.error("删除失败,无权限!");
 
             }
+
+          }).catch((res)=>{
+
+            this.$message.error("您没有权限,不能访问该资源!");
 
           });
 

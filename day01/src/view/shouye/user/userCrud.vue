@@ -2,7 +2,7 @@
   <div style="margin: 10px">
     <div style="float: left">
       <el-button type="primary" @click="addUser()">添加</el-button>
-
+      <el-button type="primary" @click="ExportDate()">导出</el-button>
     </div>
     <div class="demo-input-suffix" style="float: right">
       <el-form ref="form" label-width="80px">
@@ -55,10 +55,10 @@
           <el-popover trigger="hover" placement="top">
             <p><el-image
             style="width: 30px; height: 30px"
-            :src="'http://localhost:8090/'+scope.row.photo"></el-image></p>
+            :src="'http://www.image.com/group1/'+scope.row.photo"></el-image></p>
             <p>用户名: {{ scope.row.username }}</p>
             <p>登录名: {{ scope.row.loginname }}</p>
-            <p>性别: {{ scope.row.sex }}</p>
+            <p>性别: {{ scope.row.sex==1?'男':'女' }}</p>
             <p>电话: {{ scope.row.tel }}</p>
             <div slot="reference" class="name-wrapper">
               <el-tag size="medium">{{ scope.row.username }}</el-tag>
@@ -85,9 +85,16 @@
         label="头像"
         prop="photo">
         <template   slot-scope="scope">
-          <el-image
-            style="width: 50px; height: 50px"
-            :src="'http://localhost:8090/'+scope.row.photo"></el-image>
+          <el-popover trigger="hover" placement="top">
+            <el-image
+              :src="'http://www.image.com/group1/'+scope.row.photo.replace('_80x80.','.')"></el-image>
+            <div slot="reference" class="name-wrapper">
+              <el-image
+                style="width: 50px; height: 50px"
+                :src="'http://www.image.com/group1/'+scope.row.photo"></el-image>
+            </div>
+          </el-popover>
+
         </template>
       </el-table-column>
       <el-table-column
@@ -97,9 +104,10 @@
           <el-popover trigger="hover" placement="top">
             <p>角色名: {{ scope.row.rname }}</p>
             <p>描述: {{ scope.row.rdesc }}</p>
-            <p><el-button type="danger" size="mini" round @click="removeRole(scope.row)" >解除绑定</el-button></p>
+            <p>等级:{{scope.row.rleval}}</p>
+            <p><el-button type="danger" size="mini" round @click="removeRole(scope.row)" v-if="scope.row.rname!='普通用户'">解除绑定</el-button></p>
             <div slot="reference" class="name-wrapper">
-              <el-tag size="medium" v-if="scope.row.rname!=null">{{ scope.row.rname }}</el-tag>
+              <el-tag size="medium">{{ scope.row.rname }}</el-tag>
             </div>
           </el-popover>
         </template>
@@ -162,9 +170,7 @@
             class="avatar-uploader"
             action="http://localhost:8889/toUpload"
             :show-file-list="false"
-            :on-success="handleAvatarSuccess"
-            :before-upload="beforeAvatarUpload"
-            :auto-upload="false">
+            :on-success="handleAvatarSuccess">
             <img v-if="imageUrl" :src="imageUrl" class="avatar">
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
@@ -217,10 +223,13 @@
           ids:[],
           bindingRoleModel:false,
           roles:[],
-          roleId:""
+          roleId:"",
+          currentUser:window.JSON.parse(window.localStorage.getItem("userInfo")),
+
         }
       },
       mounted(){
+
         this.$axios.post(this.domain.serverpath+"selUser?username="+this.where.username+"&startDate="+this.where.startDate+"&endDate="+this.where.endDate+"&sex="+this.where.sex).then((res)=>{
 
           console.log(res);
@@ -259,13 +268,7 @@
           console.log(this.ids);
 
         },
-        beforeAvatarUpload(file) {
-
-          this.entityMod.photo = file.name;
-
-        },
         handleAvatarSuccess(res, file) {
-
           this.imageUrl = URL.createObjectURL(file.raw);
 
         },
@@ -274,43 +277,73 @@
 
           console.log(row);
 
-          this.$axios.post(this.domain.serverpath+"delUserAndRole?userId="+row.id+"&roleId="+row.rid).then((res)=>{
+          if(row.rleval<=this.$data.currentUser.rleval){
 
-            if(res.data.code==200){
+            this.$message.error("解除失败,您没有权限解除此用户的角色!");
 
-              this.$message({
-                message: res.data.success,
-                type: 'success',
-                duration:2000
-              });
+          }else{
 
-              this.getlist(this.pageInfo.page,this.pageInfo.rows);
+            this.$axios.post(this.domain.serverpath+"delUserAndRole?userId="+row.id+"&roleId="+row.rid+"&rid="+row.rid).then((res)=>{
 
-            }else{
+              if(res.data.code==200){
 
-              this.$message.error("解除失败!");
+                this.$message({
+                  message: res.data.success,
+                  type: 'success',
+                  duration:2000
+                });
 
-            }
+                this.getlist(this.pageInfo.page,this.pageInfo.rows);
 
-          });
+              }else{
+
+                this.$message.error("解除失败!");
+
+              }
+
+            }).catch((res)=>{
+
+              this.$message.error("您没有权限,不能访问该资源!");
+
+            });
+
+          }
 
         },
         bindingRole(index, row){
 
-          this.bindingRoleModel = true;
+          console.log(row);
 
-          this.entityMod = {};
+          if(row.rleval<this.$data.currentUser.rleval){
 
-          this.entityMod = row;
+            this.$message.error("您没有权限,不能给此用户绑定角色!");
+
+          }else{
+
+            this.bindingRoleModel = true;
+
+            this.entityMod = {};
+
+            this.entityMod = row;
+
+          }
 
         },
         binding(){
 
-          this.$axios.post(this.domain.serverpath+"selUserAndRole?uid="+this.entityMod.id).then((res)=>{
+          if(this.$data.roleId<this.$data.currentUser.rleval){
+
+            this.$message.error("您没有权限,不能给此用户绑定比您高的角色!");
+
+            this.bindingRoleModel = false;
+
+          }else{
+
+            this.$axios.post(this.domain.serverpath+"selUserAndRole?uid="+this.entityMod.id).then((res)=>{
 
               if(res.data.code==200){
 
-                this.$axios.post(this.domain.serverpath+"addUserAndRole?rid="+this.roleId+"&uid="+this.entityMod.id).then((res)=>{
+                this.$axios.post(this.domain.serverpath+"delUserAndRole?roleId="+this.roleId+"&userId="+this.entityMod.id+"&rid="+this.entityMod.rid).then((res)=>{
 
                   if(res.data.code==200){
 
@@ -332,6 +365,10 @@
 
                   }
 
+                }).catch((res)=>{
+
+                  this.$message.error("您没有权限,不能访问该资源!");
+
                 });
 
               }else{
@@ -342,7 +379,9 @@
 
               }
 
-          });
+            });
+
+          }
 
         },
         handleEdit(index, row) {
@@ -353,7 +392,7 @@
 
           this.entityMod = {};
 
-          this.imageUrl = "http://localhost:8090/"+row.photo;
+          this.imageUrl = "http://www.image.com/group1/"+row.photo;
 
           this.entityMod = row;
 
@@ -363,65 +402,115 @@
 
           if(this.entityMod.id==null){
 
-            this.$refs.upload.submit();
+            let str = "^(13[0-9]|14[5|7]|15[0|1|2|3|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\\d{8}$";
 
-            this.$axios.post(this.domain.serverpath+"addUser",this.entityMod).then((res)=>{
+            if(!this.entityMod.tel.match(str)){
 
-              if(res.data.code==200){
+              this.$message.error("您的手机号请填写正确的格式!");
 
-                this.$message({
-                  message: res.data.success,
-                  type: 'success',
-                  duration:2000
-                });
+            }else{
 
-                this.updateModel = false;
+              this.$axios.post(this.domain.serverpath+"selUserByTel?tel="+this.entityMod.tel).then((res)=>{
 
-                this.getlist(this.pageInfo.page,this.pageInfo.rows);
+                  if(res.data.code==200){
 
-              }else if(res.data.code==505){
+                    this.$refs.upload.submit();
 
-                this.updateModel = false;
+                    this.$axios.post(this.domain.serverpath+"addUser",this.entityMod).then((res)=>{
 
-                this.$message.error(res.data.success);
+                      if(res.data.code==200){
 
-              }else{
+                        this.$message({
+                          message: res.data.success,
+                          type: 'success',
+                          duration:2000
+                        });
 
-                this.updateModel = false;
+                        this.updateModel = false;
 
-                this.$message.error(res.data.error);
+                        this.getlist(this.pageInfo.page,this.pageInfo.rows);
 
-              }
+                      }else if(res.data.code==505){
 
-            });
+                        this.updateModel = false;
+
+                        this.$message.error(res.data.success);
+
+                      }else{
+
+                        this.updateModel = false;
+
+                        this.$message.error(res.data.error);
+
+                      }
+
+                    }).catch((res)=>{
+
+                      this.$message.error("您没有权限,不能访问该资源!");
+                      this.updateModel = false;
+                    });
+
+                  }else{
+
+                    this.$message.error(res.data.error);
+                    this.updateModel = false;
+                  }
+
+              });
+
+            }
 
           }else{
 
-            this.$refs.upload.submit();
+            let str = "^(13[0-9]|14[5|7]|15[0|1|2|3|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\\d{8}$";
 
-            this.$axios.post(this.domain.serverpath+"updateUser",this.entityMod).then((res)=>{
+            if(!this.entityMod.tel.match(str)){
 
-              if(res.data.code==200){
+              this.$message.error("您的手机号请填写正确的格式!");
 
-                this.$message({
-                  message: res.data.success,
-                  type: 'success',
-                  duration:2000
-                });
+            }else{
 
-                this.updateModel = false;
+               /* this.$axios.post(this.domain.serverpath+"selUserByTel?tel="+this.entityMod.tel).then((res)=>{
+                if(res.data.code==200){*/
 
-                this.getlist(this.pageInfo.page,this.pageInfo.rows);
+                  this.$refs.upload.submit();
 
-              }else{
+                  this.$axios.post(this.domain.serverpath+"updateUser",this.entityMod).then((res)=>{
 
-                this.updateModel = false;
+                    if(res.data.code==200){
 
-                this.$message.error(res.data.error);
+                      this.$message({
+                        message: res.data.success,
+                        type: 'success',
+                        duration:2000
+                      });
 
-              }
+                      this.updateModel = false;
 
-            });
+                      this.getlist(this.pageInfo.page,this.pageInfo.rows);
+
+                    }else{
+
+                      this.updateModel = false;
+
+                      this.$message.error(res.data.error);
+
+                    }
+
+                  }).catch((res)=>{
+
+                    this.$message.error("您没有权限,不能访问该资源!");
+                    this.updateModel = false;
+                  });
+
+               /* }else{
+                  this.$message.error(this.data.error);
+                  this.updateModel = false;
+                }
+
+              });
+*/
+            }
 
           }
 
@@ -453,9 +542,34 @@
 
             }
 
+          }).catch((res)=>{
+
+            this.$message.error("您没有权限,不能访问该资源!");
+
           });
 
           console.log(index, row);
+        },
+        ExportDate(){
+          this.$axios.post(this.domain.serverpath+"exportDate",this.tableData).then((res)=>{
+
+            console.log(this.tableData);
+
+            if(res.data.code==200){
+              this.$message({
+                message: res.data.success,
+                type: 'success',
+                duration:2000
+              });
+
+            }else{
+
+              this.$message.error("导出失败!");
+
+            }
+
+          });
+
         },
         getlist(page,rows){
 

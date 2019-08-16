@@ -4,45 +4,71 @@
     <div>
       <p class="p-title">LCG我爱编码,蛟龙在线,欢迎点评</p>
     </div>
+
     <div class="ms-login">
       <div class="ms-title">
         欢迎使用
       </div>
-      <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="0px" class="ms-content">
-        <el-form-item prop="username">
-          <el-input v-model="ruleForm.username" placeholder="请输入用户名">
-            <el-button slot="prepend" icon="iconfont icon-guanliyuanrenzheng"></el-button>
-          </el-input>
-        </el-form-item>
-        <el-form-item  prop="password">
-          <el-input type="password" placeholder="请输入认证密码" v-model="ruleForm.password" @keyup.enter.native="submitForm('ruleForm')">
-            <el-button slot="prepend" icon="iconfont icon-yuechi"></el-button>
-          </el-input>
-        </el-form-item>
+      <el-tabs type="border-card">
+        <el-tab-pane label="普通登陆">
+          <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="0px" class="ms-content">
+            <el-form-item prop="loginname">
+              <el-input v-model="ruleForm.loginname" placeholder="请输入用户名" @keyup.enter.native="submitForm('ruleForm')">
+                <el-button slot="prepend" icon="iconfont icon-guanliyuanrenzheng"></el-button>
+              </el-input>
+            </el-form-item>
+            <el-form-item  prop="password">
+              <el-input type="password" placeholder="请输入认证密码" v-model="ruleForm.password" @keyup.enter.native="submitForm('ruleForm')">
+                <el-button slot="prepend" icon="iconfont icon-yuechi"></el-button>
+              </el-input>
+            </el-form-item>
 
-        <el-form-item prop="code">
-          <div class="form-inline-input">
-            <div class="code-box" id="code-box">
-              <input ref="coderef" type="text" name="code" class="code-input" />
-              <p></p>
-              <span style="color:#909399">
+            <el-form-item prop="code">
+              <div class="form-inline-input">
+                <div class="code-box" id="code-box">
+                  <input ref="coderef" type="text" name="code" class="code-input" />
+                  <p></p>
+                  <span style="color:#909399">
                      拖动验证
                   </span>
+                </div>
+              </div>
+            </el-form-item>
+
+            <el-form-item >
+              <el-checkbox v-model="day">7天免登陆</el-checkbox>
+
+            </el-form-item>
+
+            <div class="login-btn">
+              <el-button type="primary" @click="submitForm('ruleForm')">登录</el-button>
             </div>
-          </div>
-        </el-form-item>
+            <!-- 登录进度 -->
+            <el-progress ref="jindu" :style="jindustyle"  :text-inside="true"
+                         :stroke-width="18"
+                         :percentage="percent"
+                         status="success"></el-progress>
+            <p><a @click="updatePassword" style="text-decoration: none;font-size: 14px">忘记密码</a></p>
+          </el-form>
+        </el-tab-pane>
 
+        <el-tab-pane label="短信登陆">
+          <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="0px" class="ms-content">
+            <el-form-item  prop="phone">
+              <el-input  placeholder="请输入手机号" v-model="ruleForm.phone">
+                <el-button slot="prepend" icon="el-icon-phone"></el-button>
+              </el-input>
+            </el-form-item>
+            <el-form-item prop="code">
+              <el-input placeholder="请输入验证码" v-model="ruleForm.code" class="input-with-select">
+                <el-button slot="append" :class="{disabled: !this.canClick}" @click="countDown">{{content}}</el-button>
+              </el-input>
+            </el-form-item>
+            <el-button type="primary" @click="phonelogin" style="width: 100%">登录</el-button>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
 
-        <div class="login-btn">
-          <el-button type="primary" @click="submitForm('ruleForm')">登录</el-button>
-        </div>
-        <!-- 登录进度 -->
-        <el-progress ref="jindu" :style="jindustyle"  :text-inside="true"
-                     :stroke-width="18"
-                     :percentage="percent"
-                     status="success"></el-progress>
-
-      </el-form>
     </div>
 
 
@@ -51,10 +77,17 @@
 </template>
 
 <script>
+  import {getCookie, setCookie} from "../../js/cookieutil";
+
   export default {
     name: "login",
     data(){
       return{
+        messageCode:{},
+        content: '发送验证码',
+        totalTime: 60,
+        canClick: true,
+        day:false,
         divimg:{//背景图片的使用
           backgroundImage:"url(" + require('../../assets/yun.jpg') + ")",
           backgroundRepeat: "no-repeat",
@@ -68,20 +101,100 @@
           display:'none'
         },
         ruleForm: {
-          username:'zhangsan',
-          password:'123456'
+          loginname:'zhangsan',
+          password:'123456',
+          phone:""
         },
         rules: {
-          username: [
+          loginname: [
             { required: true, message: '请输入用户名', trigger: 'blur' }
           ],
           password: [
             { required: true, message: '请输入密码', trigger: 'blur' }
           ]
-        }
+        },
+        phoneCode:"",
+
       }
     },
     methods:{
+      updatePassword(){
+        this.$router.push("/view/shouye/user/updatePassword");
+      },
+      phonelogin(){
+
+        this.$axios.post(this.domain.serverpath+"selUserByCode?code="+this.$data.ruleForm.code+"&tel="+this.$data.ruleForm.phone).then((res)=>{
+
+          console.log(res);
+
+          if(res.data.code==500){
+
+            this.$message.error(res.data.error);
+
+          }else{
+
+            //存储token到浏览器端的缓存中，
+            window.localStorage.setItem("token",res.data.token);
+
+            window.localStorage.setItem("userInfo",window.JSON.stringify(res.data.result));
+
+            window.localStorage.setItem("heng",window.JSON.stringify(res.data.keys));
+
+            window.localStorage.setItem("zong",window.JSON.stringify(res.data.values));
+
+            this.$router.push({path:'/system'});
+
+            this.$message({
+              message: res.data.success,
+              type: 'success',
+              duration:2000
+            });
+          }
+
+        });
+
+      },
+      countDown () {
+
+        let str = "^(13[0-9]|14[5|7]|15[0|1|2|3|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\\d{8}$";
+
+        if(!this.ruleForm.phone.match(str)){
+
+          this.$message.error("请输入正确格式的手机号!");
+
+        }else{
+
+          if (!this.canClick) return  //改动的是这两行代码
+          this.canClick = false
+          this.content = this.totalTime + 's后重新发送'
+          let clock = window.setInterval(() => {
+            this.totalTime--
+            this.content = this.totalTime + 's后重新发送'
+            if (this.totalTime < 0) {
+              window.clearInterval(clock)
+              this.content = '重新发送验证码'
+              this.totalTime = 60
+              this.canClick = true  //这里重新开启
+            }
+          },1000);
+          this.$axios.post(this.domain.serverpath+"selMessage?myPhone="+this.ruleForm.phone).then((res)=>{
+
+            if(res.data.code==200){
+
+              this.$data.phoneCode = res.data.success;
+
+            }else{
+
+              this.$message.error(res.data.error);
+              window.clearInterval(clock)
+            }
+
+          });
+
+        }
+
+
+      },
       submitForm(ruleid){
 
         let code=this.$refs.coderef.value;
@@ -94,12 +207,8 @@
             duration:1500 //延时时间
           });
         }else{
-          //登陆操作
-          let par={};
-          //将用户名和密码的明文进行加密
-          par.loginname=this.ruleForm.username;
-          par.password=this.ruleForm.password;
-          if(this.ruleForm.username==""||this.ruleForm.username==null){
+
+          if(this.ruleForm.loginname==""||this.ruleForm.loginname==null){
             this.$notify.info({
               title: '提示',
               message: '请填写用户名'
@@ -113,72 +222,96 @@
             });
             return;
           }
-          par.code=this.$refs.coderef.value;
-          par.codekey=this.Cookies.get("authcode");
-          //转JSON串
-          let canshu=this.toAes.encrypt(JSON.stringify(par));
-          let params={canshu:canshu};
-          let qs=require("qs");
-          //打开登陆进度条
-          this.$data.jindustyle.display='block';
-          //每0.1秒更新一下进度
-          var timer=setInterval(()=>{
-            let pp=this.$data.percent+10;
-            if(pp>=100){
-              pp=99;
-            }
-            this.$data.percent=pp;
-          },100)
-
-          this.$axios.post(this.domain.serverpath+"login",qs.stringify(params)).then((response)=>{
-
-            let respo=response.data;
-            if(respo.code=="200"){
-              //存储token到浏览器端的缓存中，
-              window.localStorage.setItem("token",respo.token);
-              //关闭加载窗
-              this.$data.percent=100
-              //隐藏进度条
-              this.$data.jindustyle.display='none'
-              //关闭定时
-              clearInterval(timer)
-
-              //跳转到首页界面
-              let qs=require("qs");
-
-              window.localStorage.setItem("userInfo",window.JSON.stringify(respo.result));
-
-              this.$router.push({path:'/view/shouye/shouye'});
-            }else if(respo.error!=null){
-              //关闭加载窗
-              //关闭加载窗
-              this.$data.percent=100
-              //隐藏进度条
-              this.$data.jindustyle.display='none'
-              //关闭定时
-              clearInterval(timer)
-              this.$notify.error({
-                title: '提示',
-                duration:1000,
-                message: respo.error
-              });
-            }
-
-          }).catch((error)=>{
-            //关闭加载窗
-            this.$data.percent=100;
-            //隐藏进度条
-            this.$data.jindustyle.display='none';
-            //关闭定时
-            clearInterval(timer);
-            this.$notify.error({
-              title: '错误',
-              message: '出错了~_~，请联系管理员！'
-            });
-          })
-
-
+          this.login()
         }
+
+      },
+      login(){
+        //将用户名和密码的明文进行加密
+        if(getCookie("username")!=null&&getCookie("password")!=null){
+
+          this.$data.ruleForm.loginname=getCookie("username");
+          this.$data.ruleForm.password=getCookie("password");
+          this.$data.ruleForm.key=getCookie("key");
+        }
+
+        this.$data.ruleForm.code=this.$refs.coderef.value;
+        this.$data.ruleForm.codekey=this.Cookies.get("authcode");
+
+        //打开登陆进度条
+        this.$data.jindustyle.display='block';
+        //每0.1秒更新一下进度
+        var timer=setInterval(()=>{
+          let pp=this.$data.percent+10;
+          if(pp>=100){
+            pp=99;
+          }
+          this.$data.percent=pp;
+        },100)
+
+
+        this.$axios.post(this.domain.serverpath+"login",this.$data.ruleForm).then((response)=>{
+
+          console.log(response);
+
+          let respo=response.data;
+
+          if(respo.code=="200"){
+
+            if(this.day){
+
+              setCookie("key","value",7);
+
+              setCookie("username",this.ruleForm.loginname,7);
+
+              setCookie("password",this.ruleForm.password,7);
+
+            }
+            //存储token到浏览器端的缓存中，
+            window.localStorage.setItem("token",respo.token);
+
+            window.localStorage.setItem("userInfo",window.JSON.stringify(respo.result));
+
+            window.localStorage.setItem("heng",window.JSON.stringify(respo.keys));
+
+            window.localStorage.setItem("zong",window.JSON.stringify(respo.values));
+
+            //关闭加载窗
+            this.$data.percent=100
+            //隐藏进度条
+            this.$data.jindustyle.display='none'
+            //关闭定时
+            clearInterval(timer)
+
+            //跳转到首页界面
+            this.$router.push({path:'/system'});
+          }else if(respo.error!=null){
+            //关闭加载窗
+            //关闭加载窗
+            this.$data.percent=100
+            //隐藏进度条
+            this.$data.jindustyle.display='none'
+            //关闭定时
+            clearInterval(timer)
+            this.$notify.error({
+              title: '提示',
+              duration:1000,
+              message: respo.error
+            });
+          }
+
+        }).catch((error)=>{
+          //关闭加载窗
+          this.$data.percent=100;
+          //隐藏进度条
+          this.$data.jindustyle.display='none';
+          //关闭定时
+          clearInterval(timer);
+          this.$notify.error({
+            title: '错误',
+            message: '出错了~_~，请联系管理员！'
+          });
+        });
 
       },
       //拖动验证start
@@ -279,18 +412,26 @@
 
     },
     mounted(){
-      var _this = this;
-      var code = "";
-      //从后台获取滑动验证码
-      //参数 url 访问参数
-      this.$axios.post(this.domain.serverpath+'getCode').then((response)=>{
-        code=response.data.result;
-        //向浏览器写一个Cookie
-        //document.cookie = 'testCookies' + "=" + response.data.token + "; " + -1;
-        _this.moveCode(code,_this);
-      }).catch((error)=>{
+      if(getCookie("key")=="value"){
 
-      });
+        this.login();
+        this.$router.push("/system");
+
+      }else{
+
+        var _this = this;
+        var code = "";
+        //从后台获取滑动验证码
+        //参数 url 访问参数
+        this.$axios.post(this.domain.serverpath+'getCode').then((response)=>{
+          code=response.data.result;
+          //向浏览器写一个Cookie
+          //document.cookie = 'testCookies' + "=" + response.data.token + "; " + -1;
+          _this.moveCode(code,_this);
+        })
+
+      }
+
     }
   }
 </script>
@@ -450,4 +591,11 @@
     font-style:italic
   }
   /** 滑动验证end **/
+
+  .disabled{
+     background-color: #ddd;
+     border-color: #ddd;
+     color:#57a3f3;
+     cursor: not-allowed;
+  }
 </style>

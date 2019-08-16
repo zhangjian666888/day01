@@ -4,7 +4,7 @@
       <el-header style="font-size: 12px;text-align: left">
         <span style="font-size:25px;margin-right:60%;">
             蛟龙在线
-            <el-tooltip ref="tip" class="item" effect="dark"  placement="top-start" v-bind:content="mycontent">
+            <el-tooltip ref="tip" class="item" effect="dark"  placement="top-start" v-bind:content="this.$data.mycontent">
               <i class="el-icon-menu" @click="openParentClose()"></i>
             </el-tooltip>
 
@@ -27,8 +27,8 @@
               <el-dropdown-item command="b">退出</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
-          <span ref="userinfo_username">{{userInfo.username}}</span>
-          <input ref="userinfo_userid" type="hidden" v-model="userInfo.id">
+          <span ref="userinfo_username">{{this.$data.userInfo.username}}</span>
+          <input ref="userinfo_userid" type="hidden" v-model="this.$data.userInfo.id">
           &nbsp;&nbsp;&nbsp;
           <el-dropdown trigger="click" >
               <span class="el-dropdown-link">
@@ -79,6 +79,7 @@
 <script>
   import mymenu from './datamenu.vue'
   import mymain from './datamain.vue'
+  import {delCookie} from "../../js/cookieutil";
     export default {
         name: "shouye",
         components:{mymenu,mymain},
@@ -113,9 +114,17 @@
           if(command=="b"){//退出操作
 
             this.$confirm('确认登出？').then(_ => {
-              this.$axios.post(this.domain.serverpath+"loginout?id="+this.userInfo.id).then((response)=>{
+              this.$axios.post(this.domain.serverpath+"loginout",this.$data.userInfo).then((response)=>{
+
+                delCookie("key");
+                delCookie("username")
+                delCookie("password")
+
 
                 window.localStorage.removeItem("token");
+                window.localStorage.removeItem("heng");
+                window.localStorage.removeItem("zong");
+                window.localStorage.removeItem("userInfo");
 
                 let sts=response.data.success;
                 if(sts=="ok"){

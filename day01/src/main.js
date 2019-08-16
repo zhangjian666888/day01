@@ -43,7 +43,6 @@ vueAxios.interceptors.request.use((config)=>{
     }
 
   }
-
     let token=window.localStorage.getItem("token");
 
     config.headers['token']=token;
@@ -60,7 +59,7 @@ vueAxios.interceptors.response.use((response)=>{
     if(yy!=undefined){
       //重新设置localStorge中的token的值，用来刷新tocken
       window.localStorage.setItem("token",yy);
-      this.$router.push("/")
+
     }
 
   return response;

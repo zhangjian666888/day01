@@ -176,7 +176,28 @@
           this.$data.form1.form1show=false;
           this.$data.form4.form4show=false;
 
-          alert(this.$data.form1.parentId)
+          /*alert(this.$data.form1.parentId)*/
+
+          this.$axios.post(this.domain.serverpath+"delMeun?id="+this.$data.form1.parentId).then((res)=>{
+
+             if( res.data.code==200){
+
+               this.$message({
+                 message: res.data.success,
+                 type: 'success',
+                 duration:2000
+               });
+               this.$data.dialogVisible=false;
+               this.flashList()
+
+            }else{
+               this.$data.dialogVisible=false;
+               this.$message.error("删除失败!");
+
+             }
+
+          });
+
         },
         flashList(){
           this.$axios.post(this.domain.serverpath+"selAllMeun").then((reponse)=>{

@@ -38,8 +38,9 @@
       data(){
           return{
             isCollapse:true,
-            listMenu:window.JSON.parse(window.localStorage.getItem("userInfo")).listMenu,
-            wheight:window.innerHeight
+            listMenu:[],
+            wheight:window.innerHeight,
+            currentUser:window.JSON.parse(window.localStorage.getItem("userInfo"))
           }
       },
       methods:{
@@ -73,6 +74,13 @@
       },
       mounted(){
 
+        this.$axios.post(this.domain.serverpath+"selAllMenuByRoleId?rid="+this.$data.currentUser.role.id).then((reponse)=>{
+
+          console.log(reponse)
+
+          this.$data.listMenu = reponse.data
+
+        });
       }
     }
 </script>
