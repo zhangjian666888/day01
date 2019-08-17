@@ -164,6 +164,9 @@
         <el-form-item label="电话" :label-width="formLabelWidth">
           <el-input v-model="entityMod.tel" autocomplete="off"></el-input>
         </el-form-item>
+        <el-form-item label="邮箱" :label-width="formLabelWidth">
+          <el-input v-model="entityMod.email" autocomplete="off"></el-input>
+        </el-form-item>
         <el-form-item label="用户头像" :label-width="formLabelWidth">
           <el-upload
             ref="upload"
@@ -402,67 +405,85 @@
 
           if(this.entityMod.id==null){
 
-            let str = "^(13[0-9]|14[5|7]|15[0|1|2|3|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\\d{8}$";
+            let str = "^1(3|4|5|6|7|8|9)\\d{9}$";
+
+            let str1 = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$";
 
             if(!this.entityMod.tel.match(str)){
 
               this.$message.error("您的手机号请填写正确的格式!");
 
+            }if(!this.entityMod.email.match(str1)){
+
+              this.$message.error("您的邮箱请填写正确的格式!");
+
             }else{
 
-              this.$axios.post(this.domain.serverpath+"selUserByTel?tel="+this.entityMod.tel).then((res)=>{
+              this.$axios.post(this.domain.serverpath+"selUserByEmail?email="+this.entityMod.email).then((res)=>{
 
                   if(res.data.code==200){
 
-                    this.$refs.upload.submit();
-
-                    this.$axios.post(this.domain.serverpath+"addUser",this.entityMod).then((res)=>{
+                    this.$axios.post(this.domain.serverpath+"selUserByTel?tel="+this.entityMod.tel).then((res)=>{
 
                       if(res.data.code==200){
 
-                        this.$message({
-                          message: res.data.success,
-                          type: 'success',
-                          duration:2000
+                        this.$refs.upload.submit();
+
+                        this.$axios.post(this.domain.serverpath+"addUser",this.entityMod).then((res)=>{
+
+                          if(res.data.code==200){
+
+                            this.$message({
+                              message: res.data.success,
+                              type: 'success',
+                              duration:2000
+                            });
+
+                            this.updateModel = false;
+
+                            this.getlist(this.pageInfo.page,this.pageInfo.rows);
+
+                          }else if(res.data.code==505){
+
+                            this.updateModel = false;
+
+                            this.$message.error(res.data.success);
+
+                          }else{
+
+                            this.updateModel = false;
+
+                            this.$message.error(res.data.error);
+
+                          }
+
+                        }).catch((res)=>{
+
+                          this.$message.error("您没有权限,不能访问该资源!");
+                          this.updateModel = false;
                         });
-
-                        this.updateModel = false;
-
-                        this.getlist(this.pageInfo.page,this.pageInfo.rows);
-
-                      }else if(res.data.code==505){
-
-                        this.updateModel = false;
-
-                        this.$message.error(res.data.success);
 
                       }else{
 
-                        this.updateModel = false;
-
                         this.$message.error(res.data.error);
-
+                        this.updateModel = false;
                       }
 
-                    }).catch((res)=>{
-
-                      this.$message.error("您没有权限,不能访问该资源!");
-                      this.updateModel = false;
                     });
 
                   }else{
 
                     this.$message.error(res.data.error);
-                    this.updateModel = false;
+
                   }
 
-              });
+              })
 
             }
 
           }else{
 
-            let str = "^(13[0-9]|14[5|7]|15[0|1|2|3|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\\d{8}$";
+            let str = "^1(3|4|5|6|7|8|9)\\d{9}$";
 
             if(!this.entityMod.tel.match(str)){
 

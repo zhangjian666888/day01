@@ -62,9 +62,8 @@
       </el-form>
     </div>
 
-
     <div style="width: 60%;margin-left: 15%;margin-top: 20px;display: none" id="message">
-      <p>恭喜您修改成功,请<a @click="login">登录</a>。</p>
+      <p>恭喜您修改成功,请<a @click="login">登录</a>,或等待<span style="color: red;font-size: 20px;">{{count}}</span>秒后自动跳转。</p>
     </div>
 
   </div>
@@ -80,7 +79,8 @@
             },
             codeform:{},
             passwordform:{},
-            active: 0
+            active: 0,
+            count:"",//倒计时
           }
         },
       methods:{
@@ -143,9 +143,7 @@
 
         },
         updatePassword(){
-          this.active = 4;
-          $("#password").css("display","none");
-          $("#message").css("display","block");
+
 
           let s1 = this.$data.passwordform.password;
 
@@ -162,6 +160,12 @@
                   type: 'success',
                   duration:2000
                 });
+
+                this.active = 4;
+                $("#password").css("display","none");
+                $("#message").css("display","block");
+
+                this.startDivi();
 
               }else{
 
@@ -182,7 +186,27 @@
 
           this.$router.push("/");
 
-        }
+        },
+        startDivi(){
+          const TIME_COUNT = 5;
+          if(!this.timer){
+            this.count = TIME_COUNT;
+            this.show = false;
+            this.timer = setInterval(()=>{
+              if(this.count > 0 && this.count <= TIME_COUNT){
+                this.count--;
+              }else{
+                this.show = true;
+                clearInterval(this.timer);
+                this.timer = null;
+                //跳转的页面写在此处
+                this.$router.push({
+                  path: '/'
+                });
+              }
+            },1000)
+          }
+        },
       }
     }
 </script>
