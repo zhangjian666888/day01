@@ -1,8 +1,8 @@
 <template>
   <div style="margin: 10px">
     <div style="float: left">
-      <el-button type="primary" @click="addRole()">添加</el-button>
-
+      <el-button type="primary" @click="addRole()" v-show="addRoleButton">添加</el-button>
+      <el-button type="primary" @click="downloadExcel()">下载模板</el-button>
     </div>
     <div class="demo-input-suffix" style="float: right;margin-right: 50px">
       <el-form ref="form" label-width="80px">
@@ -53,15 +53,15 @@
         <template slot-scope="scope">
           <el-button
             size="mini"
-            @click="handleEdit(scope.$index, scope.row)">Edit</el-button>
+            @click="handleEdit(scope.$index, scope.row)" v-show="updateRoleButton">Edit</el-button>
           <el-button
             size="mini"
             type="danger"
-            @click="handleDelete(scope.$index, scope.row)">Delete</el-button>
+            @click="handleDelete(scope.$index, scope.row)" v-show="delRoleButton">Delete</el-button>
           <el-button
             size="mini"
             type="primary"
-            @click="bindingMenu(scope.$index, scope.row)">绑定权限</el-button>
+            @click="bindingMenu(scope.$index, scope.row)" v-show="addRoleAndMenu">绑定权限</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -137,6 +137,10 @@
         name: "roleCrud",
       data() {
         return {
+          addRoleButton:false,
+          updateRoleButton:false,
+          delRoleButton:false,
+          addRoleAndMenu:false,
           tableData: [],
           entityMod:{},
           where:{rname:""},
@@ -160,6 +164,23 @@
         }
       },
       mounted(){
+
+          if(this.$data.currentUser.authmap['http://localhost:10000/addRole']===""){
+            this.addRoleButton=true;
+          }
+
+          if(this.$data.currentUser.authmap['http://localhost:10000/updateRole']===""){
+            this.updateRoleButton=true;
+          }
+
+          if(this.$data.currentUser.authmap['http://localhost:10000/delRole']===""){
+            this.delRoleButton=true;
+          }
+
+          if(this.$data.currentUser.authmap['http://localhost:10000/addMenuAndRole']===""){
+            this.addRoleAndMenu=true;
+          }
+
           /*查询角色列表*/
         this.$axios.post(this.domain.serverpath+"selRole?rname="+this.where.rname).then((res)=>{
 
@@ -186,6 +207,36 @@
 
       },
       methods: {
+        //列表下载
+        downloadExcel() {
+          this.$confirm('确定下载列表文件?', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            this.excelData = []; //你要导出的数据list。
+            this.export2Excel();
+          }).catch(() => {
+
+          });
+        },
+        //数据写入excel
+        export2Excel() {
+          var that = this;
+          require.ensure([], () => {
+            const { export_json_to_excel } = require('@/excel/export2Excel'); //这里必须使用绝对路径，使用@/+存放export2Excel的路径
+            const tHeader = ['角色ID','角色名称','角色描述','角色等级']; // 导出的表头名信息
+            const filterVal = ['id','roleName', 'miaoShu', 'leval']; // 导出的表头字段名，需要导出表格字段名
+            const list = [];
+            const data = that.formatJson(filterVal, list);
+
+            export_json_to_excel(tHeader, data, '角色模板');// 导出的表格名称，根据需要自己命名
+          })
+        },
+        //格式转换，直接复制即可
+        formatJson(filterVal, jsonData) {
+          return jsonData.map(v => filterVal.map(j => v[j]))
+        },
         handleSelectionChange(val) {
           console.log(val);
           this.ids = [];

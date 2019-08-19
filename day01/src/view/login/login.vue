@@ -186,7 +186,11 @@
             }else{
 
               this.$message.error(res.data.error);
-              window.clearInterval(clock)
+              window.clearInterval(clock);
+              this.content = '重新发送验证码'
+              this.totalTime = 60
+              this.canClick = true
+
             }
 
           });

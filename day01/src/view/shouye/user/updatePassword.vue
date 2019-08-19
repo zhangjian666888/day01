@@ -63,7 +63,7 @@
     </div>
 
     <div style="width: 60%;margin-left: 15%;margin-top: 20px;display: none" id="message">
-      <p>恭喜您修改成功,请<a @click="login">登录</a>,或等待<span style="color: red;font-size: 20px;">{{count}}</span>秒后自动跳转。</p>
+      <p>恭喜您修改成功,请<a @click="login" style="font-size: 20px">登录</a>,或等待<span style="color: red;font-size: 20px;">{{count}}</span>秒后自动跳转。</p>
     </div>
 
   </div>
