@@ -2,12 +2,12 @@
   <div style="margin-top: 30px;width: 80%;margin-left: 10%">
     <el-steps :active="active" finish-status="success" align-center>
       <el-step title="步骤 1" description="请输入您的邮箱，接收验证码。"></el-step>
-      <el-step title="步骤 2" description="请输入您邮箱接收到的验证码。"></el-step>
+      <el-step title="步骤 2" description="请查看您的邮件。"></el-step>
       <el-step title="步骤 3" description="修改密码。"></el-step>
       <el-step title="步骤 4" description="恭喜您完成修改。"></el-step>
     </el-steps>
 
-    <div style="width: 60%;margin-left: 15%;margin-top: 20px;" id="email">
+    <div style="width: 60%;margin-left: 15%;margin-top: 30px;" id="email">
       <el-form :model="dynamicValidateForm" ref="dynamicValidateForm" label-width="100px" class="demo-dynamic">
         <el-form-item
           prop="email"
@@ -28,21 +28,15 @@
       </el-form>
     </div>
 
-    <div style="width: 60%;margin-left: 15%;margin-top: 20px;display: none" id="code">
+    <div style="width: 60%;margin-left: 15%;margin-top: 30px;display: none" id="code">
       <el-form :model="codeform"  label-width="100px" class="demo-dynamic">
-        <el-form-item
-          prop="code"
-          label="验证码">
-          <el-input v-model="codeform.code"></el-input>
-        </el-form-item>
-
         <el-form-item>
-          <el-button type="primary" @click="sendcode">提交</el-button>
+          <el-button type="primary" @click="sendcode">查看邮箱</el-button>
         </el-form-item>
       </el-form>
     </div>
 
-    <div style="width: 60%;margin-left: 15%;margin-top: 20px;display: none" id="password">
+    <div style="width: 60%;margin-left: 15%;margin-top: 30px;display: none" id="password">
       <el-form :model="passwordform" label-width="100px" class="demo-dynamic">
         <el-form-item
           prop="password"
@@ -62,7 +56,7 @@
       </el-form>
     </div>
 
-    <div style="width: 60%;margin-left: 15%;margin-top: 20px;display: none" id="message">
+    <div style="width: 60%;margin-left: 15%;margin-top: 30px;display: none" id="message">
       <p>恭喜您修改成功,请<a @click="login" style="font-size: 20px">登录</a>,或等待<span style="color: red;font-size: 20px;">{{count}}</span>秒后自动跳转。</p>
     </div>
 
@@ -83,8 +77,21 @@
             count:"",//倒计时
           }
         },
+      mounted(){
+        this.active = this.$route.query.ss;
+        this.$data.dynamicValidateForm.email = this.$route.query.email;
+        if(this.active!=null){
+          $("#email").css("display","none");
+
+          $("#code").css("display","none");
+
+          $("#password").css("display","block");
+
+        }
+      },
       methods:{
         submitForm(formName) {
+
           this.$refs[formName].validate((valid) => {
 
             if (valid) {
@@ -121,25 +128,20 @@
         },
         sendcode(){
 
-          this.$axios.post(this.domain.serverpath+"selEmailCode?code="+this.$data.codeform.code+"&email="+this.$data.dynamicValidateForm.email).then((res)=>{
+          let str = this.$data.dynamicValidateForm.email;
 
-            if(res.data.code==200){
+          $("#code").css("display","none");
 
-              this.active = 2;
+          $("#password").css("display","block");
 
-              $("#password").css("display","block");
+          if(str.indexOf("qq")>0){
 
-              $("#code").css("display","none");
+            location = "https://mail.qq.com/";
 
-            }else{
-
-              this.active = 1;
-
-              this.$message.error(res.data.error);
-
-            }
-
-          });
+          }
+          if(str.indexOf("163")>0){
+            location = "https://mail.163.com/";
+          }
 
         },
         updatePassword(){
@@ -169,7 +171,7 @@
 
               }else{
 
-                this.$message.error("修改失败!");
+                this.$message.error(this.data.error);
 
               }
 

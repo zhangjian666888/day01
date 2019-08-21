@@ -1,7 +1,7 @@
 <template>
   <div style="margin: 10px">
     <div style="float: left">
-      <el-button type="primary" @click="addUser()">添加</el-button>
+      <el-button type="primary" @click="addUser()" v-show="addUserButton">添加</el-button>
       <el-button type="primary" @click="ExportDate()">导出</el-button>
     </div>
     <div class="demo-input-suffix" style="float: right">
@@ -105,7 +105,7 @@
             <p>角色名: {{ scope.row.rname }}</p>
             <p>描述: {{ scope.row.rdesc }}</p>
             <p>等级:{{scope.row.rleval}}</p>
-            <p><el-button type="danger" size="mini" round @click="removeRole(scope.row)" v-if="scope.row.rname!='普通用户'">解除绑定</el-button></p>
+            <p><el-button type="danger" size="mini" round @click="removeRole(scope.row)" v-if="scope.row.rname!='普通用户'" v-show="delRoleAndUserButton">解除绑定</el-button></p>
             <div slot="reference" class="name-wrapper">
               <el-tag size="medium">{{ scope.row.rname }}</el-tag>
             </div>
@@ -120,14 +120,14 @@
           <el-button
             type="primary"
             icon="el-icon-edit" circle
-            @click="handleEdit(scope.$index, scope.row)"></el-button>
+            @click="handleEdit(scope.$index, scope.row)" v-show="updateUserButton"></el-button>
           <el-button
             type="danger" icon="el-icon-delete" circle
-            @click="handleDelete(scope.$index, scope.row)"></el-button>
+            @click="handleDelete(scope.$index, scope.row)" v-show="delUserButton"></el-button>
           <el-button
             type="success"
             icon="el-icon-share" circle
-            @click="bindingRole(scope.$index, scope.row)"></el-button>
+            @click="bindingRole(scope.$index, scope.row)" v-show="addUserAndRoleButton"></el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -211,6 +211,11 @@
         name: "userCrud",
       data() {
         return {
+          addUserButton:false,
+          delRoleAndUserButton:false,
+          updateUserButton:false,
+          delUserButton:false,
+          addUserAndRoleButton:false,
           tableData: [],
           entityMod:{},
           where:{username:"",startDate:"",endDate:"",sex:""},
@@ -232,6 +237,26 @@
         }
       },
       mounted(){
+
+          if(this.$data.currentUser.authmap['http://localhost:10000/addUser']===""){
+            this.addUserButton=true;
+          }
+
+          if(this.$data.currentUser.authmap['http://localhost:10000/delUserAndRole']===""){
+            this.delRoleAndUserButton=true;
+          }
+
+          if(this.$data.currentUser.authmap['http://localhost:10000/updateUser']===""){
+            this.updateUserButton=true;
+          }
+
+          if(this.$data.currentUser.authmap['http://localhost:10000/delUser']===""){
+            this.delUserButton=true;
+          }
+
+          if(this.$data.currentUser.authmap['http://localhost:10000/addMenuAndRole']===""){
+            this.addUserAndRoleButton=true;
+          }
 
         this.$axios.post(this.domain.serverpath+"selUser?username="+this.where.username+"&startDate="+this.where.startDate+"&endDate="+this.where.endDate+"&sex="+this.where.sex).then((res)=>{
 

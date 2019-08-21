@@ -20,6 +20,9 @@
 
         <div style="float:right">
           <el-dropdown @command="handleCommand">
+            <el-image
+              style="width: 30px; height: 30px;border-radius:50%; overflow:hidden;margin-right: 10px;"
+              :src="'http://www.image.com/group1/'+this.$data.userInfo.photo"></el-image>
             <i class="el-icon-setting" style="margin-right: 15px"></i>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item command="c">首页</el-dropdown-item>
